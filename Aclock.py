@@ -2,32 +2,37 @@ import time
 import board
 import neopixel
 from fontdef import *
+import busio
+import adafruit_ds3231
 import gc
 
 
 def foo():
-    tf = '{:02}:{:02}:{:02}'
-    hours = minutes = seconds = 0
-    def drawtime(t, p, c):
-        p.fill((0, 0, 0,))
-        offset = 0
-        for digit in t:
-            for i, j in enumerate(font[fontmap.index(digit)]):
-                p[i + offset] = j * c
-            offset += len(font[fontmap.index(digit)])
-        p.show()
-
-    pixels = neopixel.NeoPixel(board.D4, 256, bpp=3, brightness=0.1, auto_write=False)
+    tf = '{3:02}:{4:02}:{5:02}'
+    ds3231 = adafruit_ds3231.DS3231(busio.I2C(board.SCL, board.SDA))
     while True:
-        currenttime = tf.format(hours, minutes, seconds)
-        drawtime(currenttime, pixels, 0x3333ff)
+        print(gc.mem_free())
+        with neopixel.NeoPixel(board.D1, 224, bpp=3, brightness=0.1, auto_write=False) as p:
+            print(gc.mem_free())
+            p.fill((0, 0, 0,))
+            offset = 0
+            for digit in tf.format(*ds3231.datetime):
+                for i, j in enumerate(font[fontmap.index(digit)]):
+                    p[i + offset] = j * 0x3333ff
+                offset += len(font[fontmap.index(digit)])
+            print(gc.mem_free())
+            p.show()
+            print(gc.mem_free())
         time.sleep(1)
-        seconds += 1
-        if seconds == 60:
-            seconds = 0
-            minutes += 1
-            if minutes == 60:
-                minutes = 0
-                hours += 1
-                if hours == 24:
-                    hours = 0
+
+
+'''
+gc outputs with 2.2.4:
+1312
+528
+5248
+
+
+
+
+'''
